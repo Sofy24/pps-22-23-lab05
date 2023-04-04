@@ -62,15 +62,12 @@ enum List[A]:
   def listSize(list: List[A]): Integer = list.length
 
 
-  private val size = this.length
-
-  def zipRight: List[(A, Int)] = this match
-      case h :: t => List((h, size)).append(t.zipRight)
+  def zipRight: List[(A, Int)] =
+    def insideFunction(list: List[A], n: Int): List[(A, Int)] = list match
+      case h :: t => (h, n) :: insideFunction(t, n + 1)
       case Nil() => Nil()
+    insideFunction(this, 0)
 
-  /*def zipRight: List[(A, Int)] = this.reverse() match
-    case h :: t => List((h, t.length)).append(t.reverse().zipRight)
-    case Nil() => Nil()*/
 
   def partition(pred: A => Boolean): (List[A], List[A]) =
     (this filter(pred(_)), this filter(!pred(_)))
@@ -87,15 +84,34 @@ enum List[A]:
     case Nil() => throw new UnsupportedOperationException()
     case h :: t => t.foldLeft(h)(op)
 
-  def takeRight(n: Int): List[A] = this.reverse() match
-    case h :: t if n > 0 => {println(h); List(h).append(t.reverse().takeRight(n - 1))}
-    case _ => Nil()
+  def takeRight(n: Int): List[A] =
+    def insideFunction(list: List[A], remaining: Int): List[A] = list match
+      case h :: t if remaining > 0 => insideFunction(t, remaining - 1)
+      case _ if remaining == 0 => list
+      case _ => Nil()
+    val listLength = this.length
+    insideFunction(this, listLength - n)
 
-  /*def takeRight(n: Int): List[A] = this.reverse() match
-    case h :: t if n > 0 => {println(h); List(h).append(t.reverse().takeRight(n - 1))}
-    case _ => Nil()*/
+  def collectRecursive[B](partial: PartialFunction[A, B]): List[B] =
+    def insideFunction(list: List[A], accumulator: List[B]): List[B] = list match
+      case h :: t if partial.isDefinedAt(h) => insideFunction(t, partial(h) :: accumulator)
+      case h :: t => insideFunction(t, accumulator)
+      case _ => accumulator.reverse()
+    insideFunction(this, Nil())
 
-  //def collect({})
+  def collectFoldLeft[B](partial: PartialFunction[A, B]): List[B] =
+    foldLeft[List[B]](Nil())((accumulator, element) =>
+      if partial.isDefinedAt(element) then partial(element) :: accumulator else accumulator
+    ).reverse()
+
+  def collectFoldRight[B](partial: PartialFunction[A,B]): List[B] =
+    foldRight[List[B]](Nil())((element, accumulator) =>
+      if partial.isDefinedAt(element) then partial(element) :: accumulator else accumulator
+    )
+
+  def collectFilterAndMap[B](partial: PartialFunction[A,B]): List[B] =
+    filter(partial.isDefinedAt).map(partial)
+
 
 // Factories
 object List:
@@ -119,3 +135,9 @@ object List:
   catch case ex: Exception => println(ex) // prints exception
   println(List(10).reduce(_ + _)) // 10
   println(reference.takeRight(3)) // List(2, 3, 4)
+  println(reference.collectRecursive { case x if x % 2 == 0 => x * 2 }) // ::((4, ::((8, Nil()))))
+  println(reference.collectFoldLeft { case x if x % 2 == 0 => x * 2 }) // ::((4, ::((8, Nil()))))
+  println(reference.collectFilterAndMap { case x if x % 2 == 0 => x * 2 }) // ::((4, ::((8, Nil()))))
+
+
+
