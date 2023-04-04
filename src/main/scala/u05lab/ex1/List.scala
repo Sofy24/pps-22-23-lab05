@@ -58,17 +58,44 @@ enum List[A]:
 
   def reverse(): List[A] = foldLeft[List[A]](Nil())((l, e) => e :: l)
 
-  /** EXERCISES */
-  def zipRight: List[(A, Int)] = ???
+  /** EXERCISES */ //0, 1, 2,3 parti da 0
+  def listSize(list: List[A]): Integer = list.length
 
-  def partition(pred: A => Boolean): (List[A], List[A]) = ???
 
-  def span(pred: A => Boolean): (List[A], List[A]) = ???
+  private val size = this.length
+
+  def zipRight: List[(A, Int)] = this match
+      case h :: t => List((h, size)).append(t.zipRight)
+      case Nil() => Nil()
+
+  /*def zipRight: List[(A, Int)] = this.reverse() match
+    case h :: t => List((h, t.length)).append(t.reverse().zipRight)
+    case Nil() => Nil()*/
+
+  def partition(pred: A => Boolean): (List[A], List[A]) =
+    (this filter(pred(_)), this filter(!pred(_)))
+
+  def span(pred: A => Boolean): (List[A], List[A]) = this match
+    case h :: t if pred(h) =>
+      val (first, second) = t.span(pred)
+      (h :: first, second)
+    case _ => (Nil(), this)
+
 
   /** @throws UnsupportedOperationException if the list is empty */
-  def reduce(op: (A, A) => A): A = ???
+  def reduce(op: (A, A) => A): A = this match
+    case Nil() => throw new UnsupportedOperationException()
+    case h :: t => t.foldLeft(h)(op)
 
-  def takeRight(n: Int): List[A] = ???
+  def takeRight(n: Int): List[A] = this.reverse() match
+    case h :: t if n > 0 => {println(h); List(h).append(t.reverse().takeRight(n - 1))}
+    case _ => Nil()
+
+  /*def takeRight(n: Int): List[A] = this.reverse() match
+    case h :: t if n > 0 => {println(h); List(h).append(t.reverse().takeRight(n - 1))}
+    case _ => Nil()*/
+
+  //def collect({})
 
 // Factories
 object List:
