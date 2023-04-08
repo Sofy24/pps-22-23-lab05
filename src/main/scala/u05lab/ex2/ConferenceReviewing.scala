@@ -28,6 +28,8 @@ trait ConferenceReviewing:
 
   def sortedAcceptedArticles: List[Pair[Int, Double]]
 
+  def averageWeightedFinalScore(article: Int): Double
+
   def averageWeightedFinalScoreMap(article: Int): Map[Int, Double]
 
 object ConferenceReviewing:
@@ -50,39 +52,29 @@ object ConferenceReviewing:
         .map(p => p.getY(question))
         .sorted
 
-    /*def averageFinalScore(article: Int): Double = {
-  val finalScores = reviews
-    .filter(p => p.getX() == article)
-    .map(p => p.getY.get(Question.FINAL))
-    .map(_.toInt)
 
-  finalScores.sum.toDouble / finalScores.size
-}*/
 
-    override def averageFinalScore(article: Int): Double = ???
-      /*val finalScores = reviews
+    override def averageFinalScore(article: Int): Double =
+      val finalScores = reviews
         .filter(p => p.getX == article)
-        .map(p => p.getY.get(Question.FINAL)).
+        .map(p => p.getY(Question.FINAL))
 
-      finalScores.sum.toDouble / finalScores.size*/
+      finalScores.sum.toDouble / finalScores.size
 
-    //TODO Pair refactor
-
-    override def accepted(article: Int): Boolean = ???
-      //averageFinalScore(article) > 5.0 && reviews.filter(p => p.getX == article).map(p => p.getY.filter((question, e) => question == Question.RELEVANCE && e > 8))
+    override def accepted(article: Int): Boolean =
+      averageFinalScore(article) > 5.0 && !reviews.filter(p => p.getX == article).map(p => p.getY).filter(p => p(Question.RELEVANCE) > 8).map(p => p.keySet).contains(Question.RELEVANCE)
 
     override def acceptedArticles: Set[Int] =
       reviews.map(p => p.getX).distinct.filter(this.accepted).toSet
 
-    override def sortedAcceptedArticles: List[Pair[Int, Double]] = ???
+    override def sortedAcceptedArticles: List[Pair[Int, Double]] =
       this.acceptedArticles.map(e => Pair(e, this.averageFinalScore(e))).toList.sorted((e1,e2)=>e1.getY.compareTo(e2.getY))
 
-    override def averageWeightedFinalScoreMap(article: Int): Map[Int, Double] = ???
-//      val filteredElements = reviews.filter(p => p.getX == article).map(p => p.getY.get(Question.FINAL) * .get(Question.CONFIDENCE) / 10.0)
-//      filteredElements.sum / filteredElements.length
-  /*return reviews.stream()
-        .filter(p -> p.getX() == article)
-        .mapToDouble(p -> p.getY().get(Question.FINAL) * p.getY().get(Question.CONFIDENCE) / 10.0)
-        .average().getAsDouble();*/
+    override def averageWeightedFinalScore(article: Int): Double =
+      val filteredElements = reviews.filter(p => p.getX == article).map(p => p.getY(Question.FINAL) * p.getY(Question.CONFIDENCE) / 10.0)
+      filteredElements.sum / filteredElements.length
+
+    override def averageWeightedFinalScoreMap(article: Int): Map[Int, Double] =
+      reviews.map(p => p.getX).distinct.map(i => i -> averageWeightedFinalScore(i)).toMap
 
   def apply(): ConferenceReviewing = ConferenceReviewingImpl()
